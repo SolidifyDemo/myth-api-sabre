@@ -6,6 +6,7 @@ using MythApi.Endpoints.v1;
 using MythApi.Mythologies.DBRepositories;
 using MythApi.Mythologies.Interfaces;
 using Azure.Identity;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,12 +30,18 @@ builder.Services
     .AddScoped<IGodRepository, GodRepository>()
     .AddScoped<IMythologyRepository, MythologyRepository>();
 
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddInMemoryRateLimiting();
+
 var app = builder.Build();
 
 app.RegisterGodEndpoints();
 app.RegisterMythologiesEndpoints();
 app.UseSwagger();
 app.UseSwaggerUI();
-
+app.UseIpRateLimiting();
 
 app.Run();
